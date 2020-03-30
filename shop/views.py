@@ -43,25 +43,6 @@ def contact(request):
         thank = True
     return render(request, './shop/contact.html' , {'thank': thank})
 
-# def tracker(request):
-#     if request.method == 'POST':
-#         orderid = request.POST.get('orderid' , '')
-#         email = request.POST.get('Email' , '')
-#         try:
-#             order = Orders.objects.filter(order_id=orderid , email= email)
-#             if len(order)>0:
-#                 update = OrderUpdate.objects.filter(order_id=orderid)
-#                 updates = []
-#                 for item in update:
-#                     updates.append({'text': item.update_desc, 'time':item.timestamp})
-#                     response = json.dumps(updates , default=str)
-#                 return HttpResponse(response)
-#             else:
-#                 return HttpResponse('{}')
-
-#         except Exception as e:
-#             return HttpResponse('{}')
-#     return render(request, './shop/tracker.html')
 
 def tracker(request):
     if request.method=="POST":
@@ -83,8 +64,60 @@ def tracker(request):
 
     return render(request, 'shop/tracker.html')
 
+def searchMatch(query, item):
+    '''return true only if query matches the item'''
+    if query in item.description.lower() or query in item.product_name.lower() or query in item.category.lower():
+        return True
+    else:
+        return False
+
 def search(request):
-    return render(request, './shop/search.html')
+    query = request.GET.get('search')
+    allProds = []
+    catprods = Product.objects.values('category', 'id')
+    cats = {item['category'] for item in catprods}
+    for cat in cats:
+        prodtemp = Product.objects.filter(category=cat)
+        prod = [item for item in prodtemp if searchMatch(query, item)]
+
+        n = len(prod)
+        nSlides = n // 4 + ceil((n / 4) - (n // 4))
+        if len(prod) != 0:
+            allProds.append([prod, range(1, nSlides), nSlides])
+    params = {'allProds': allProds, "mxg": ""}
+    if len(allProds) == 0 or len(query)<2:
+        params = {'mxg': "Please make sure to enter relevant search query"}
+    return render(request, 'shop/search.html', params)
+
+
+# def searchmatch(query,prod):
+#     if query in prod.product_name.lower() or prod.description.lower():
+#         print(query)
+#         return True
+#     else:
+#         return False
+#
+# def search(request):
+#     query = request.GET.get('search')
+#     allProds = []
+#     catProds = Product.objects.values('category')
+#     cats = {item['category'] for item in catProds}
+#     for cat in cats:
+#         prodtemp = Product.objects.filter(category=cat)
+#         prod = [item for item in prodtemp if searchmatch(query,item)]
+#         n = len(prod)
+#         nslides = n // 4 + ceil((n // 4) - (n // 4))
+#
+#         if len(prod) != 0:
+#             allProds.append([prod, range(1, nslides), nslides])
+#
+#     params = {'allProds': allProds, 'mxg' :''}
+#     if len(allProds) == 0 or len(query)<4:
+#         params = {'mxg' : 'Please Enter Valid Keys'}
+#     return render(request, './shop/search.html', params)
+
+
+
 
 def productView(request , myid):
     product = Product.objects.filter(id=myid)
